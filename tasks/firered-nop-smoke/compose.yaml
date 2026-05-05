@@ -1,0 +1,35 @@
+# Per-task compose for firered-nop-smoke.
+# Two services: agent workspace (default) and verifier. They share a volume so
+# the patch the solver writes in the default service is visible to the scorer
+# when it calls into the verifier service.
+
+services:
+  default:
+    build:
+      context: ./environment
+      dockerfile: Dockerfile.default
+    init: true
+    working_dir: /workspace
+    volumes:
+      - patch-share:/workspace/out
+    networks:
+      - agentnet
+
+  verifier:
+    build:
+      context: ./environment
+      dockerfile: Dockerfile.verifier
+    init: true
+    volumes:
+      - patch-share:/in:ro
+    networks:
+      - vnet
+
+volumes:
+  patch-share:
+
+# Two isolated networks so the agent has no IP-level reachability to the
+# verifier service (defense-in-depth on top of Inspect's tool sandboxing).
+networks:
+  agentnet:
+  vnet:

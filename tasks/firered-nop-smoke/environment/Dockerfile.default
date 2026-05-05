@@ -1,0 +1,14 @@
+# Default service for the firered-nop-smoke task.
+# Agent workspace: python (for stub solver) + xdelta3 (so the agent can build patches
+# locally if it wants to). Kept tiny.
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 xdelta3 ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+RUN mkdir -p /workspace/out
+
+CMD ["sleep", "infinity"]

@@ -1,0 +1,15 @@
+# Verifier service for the firered-nop-smoke task.
+# Extends the shared GBA substrate base image with this task's pinned ROM and
+# xdelta3 (used by the scorer to apply the agent's patch before invoking gba_probe).
+# The ROM is baked in at build time so per-sample lifecycle has no host-path coupling.
+
+FROM gamehackbench/gba-base:0.1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xdelta3 \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /roms /work
+COPY firered.gba /roms/firered.gba
+
+CMD ["sleep", "infinity"]
