@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """One-shot artifact generator for the firered-nop-smoke task.
 
 Picks a fixed offset deep in the ROM, writes a 2-byte Thumb NOP (mov r8, r8 = 0x46c0),
