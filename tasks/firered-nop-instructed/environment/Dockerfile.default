@@ -1,0 +1,17 @@
+# Default service for the firered-nop-instructed task.
+# Differs from firered-nop-smoke's Dockerfile.default: the base ROM is baked in
+# at /workspace/rom/firered.gba so a real agent can read the bytes it needs to
+# patch. The patch output dir /workspace/out is provided by the compose volume.
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 xdelta3 ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /workspace/rom /workspace/out
+COPY firered.gba /workspace/rom/firered.gba
+
+WORKDIR /workspace
+
+CMD ["sleep", "infinity"]

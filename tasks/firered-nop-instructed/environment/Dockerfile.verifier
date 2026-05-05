@@ -1,0 +1,15 @@
+# Verifier service for the firered-nop-instructed task.
+# Identical to firered-nop-smoke's verifier: GBA substrate base + xdelta3 + ROM
+# baked at /roms/firered.gba. The scorer applies the agent's patch here, runs
+# gba_probe, and SHA-1s the resulting RAM dump.
+
+FROM gamehackbench/gba-base:0.1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xdelta3 \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /roms /work
+COPY firered.gba /roms/firered.gba
+
+CMD ["sleep", "infinity"]

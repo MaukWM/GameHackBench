@@ -1,0 +1,36 @@
+# Per-task compose for firered-nop-instructed.
+# Same shape as firered-nop-smoke: agent default service + verifier service, with
+# a shared volume so the patch the agent writes in default is visible to the
+# scorer when it execs in verifier. Difference vs smoke: the ROM is also baked
+# into the default service so a real agent can read+modify it.
+
+services:
+  default:
+    build:
+      context: ./environment
+      dockerfile: Dockerfile.default
+    init: true
+    working_dir: /workspace
+    volumes:
+      - patch-share:/workspace/out
+    networks:
+      - agentnet
+
+  verifier:
+    build:
+      context: ./environment
+      dockerfile: Dockerfile.verifier
+    init: true
+    volumes:
+      - patch-share:/in:ro
+    networks:
+      - vnet
+
+volumes:
+  patch-share:
+
+# Two isolated networks so the agent has no IP-level reachability to the
+# verifier service.
+networks:
+  agentnet:
+  vnet:

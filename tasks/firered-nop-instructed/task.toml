@@ -1,0 +1,27 @@
+# GameHackBench task: firered-nop-instructed
+#
+# Smoke #2. Same patch + oracle as firered-nop-smoke, but the solver is a real
+# agent (basic_agent + bash) that must follow byte-level instructions in
+# instruction.md and emit a valid xdelta3 patch on its own. No reverse-engineering
+# is required — this validates that an LLM agent can drive the existing harness.
+
+id = "firered-nop-instructed"
+description = "Real agent follows explicit byte-level patch instructions and emits an xdelta3 that reproduces the locked oracle RAM SHA-1."
+
+[rom]
+path = "firered.gba"                                                    # baked into BOTH services at /workspace/rom and /roms
+sha1 = "dd5945db9b930750cb39d00c84da8571feebf417"                       # No-Intro Pokémon FireRed (USA, Europe) Rev 1
+
+[probe]
+frames = 600
+
+[oracle]
+# Identical to firered-nop-smoke (same NOP at the same offset, same frame count).
+# Reproduced by gen_artifacts.py so the task is self-contained.
+state_sha1 = "74d47f2fad70f5882b3b7bb0e4f777d0247cd7a0"
+
+[patch]
+# Reference info for the instructed patch (the agent produces the patch file itself).
+offset = 0x204                                                          # entry-point target of the ARM branch at 0x000
+bytes_hex = "c046"                                                      # Thumb `mov r8, r8` little-endian
+format = "xdelta3"
