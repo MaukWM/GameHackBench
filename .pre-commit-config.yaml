@@ -42,6 +42,7 @@ repos:
           - sentry-sdk>=2.49.0
           - structlog>=25.5.0
           - python-dotenv>=1.0.0
+          - inspect-ai>=0.3.217
 
   - repo: local
     hooks:

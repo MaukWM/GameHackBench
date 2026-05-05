@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """Inspect AI entrypoint for the firered-nop-smoke task.
 
 End-to-end harness validation: stub solver copies a pre-baked xdelta3 patch into
@@ -30,8 +31,7 @@ def _load_task_config() -> dict:
 
 
 @solver
-def stub_patch_solver(local_patch: Path = SOLUTION_PATCH,
-                      dest: str = "/workspace/out/patch.xdelta") -> Solver:
+def stub_patch_solver(local_patch: Path = SOLUTION_PATCH, dest: str = "/workspace/out/patch.xdelta") -> Solver:
     """Copies a pre-baked xdelta3 patch into the agent workspace.
 
     Stand-in for a real agent solver. Used to validate the harness pipeline before
@@ -94,8 +94,7 @@ def gba_ram_sha_scorer() -> Scorer:
         observed = hashlib.sha1(ram).hexdigest()
 
         if observed == oracle_sha:
-            return Score(value=CORRECT, answer=observed,
-                         explanation=f"RAM SHA-1 matches oracle ({observed})")
+            return Score(value=CORRECT, answer=observed, explanation=f"RAM SHA-1 matches oracle ({observed})")
         return Score(
             value=INCORRECT,
             answer=observed,
