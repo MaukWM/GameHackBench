@@ -39,3 +39,13 @@ htmlcov/
 .cache/
 
 roms/
+
+# Per-task staged ROM copies (created by each task's gen_smoke_artifacts.py — needed
+# by the verifier Dockerfile build context, but still copyrighted binaries).
+tasks/*/environment/*.gba
+
+# Inspect AI eval logs
+logs/
+
+# Per-task generator scratch dirs
+tasks/*/_work/
