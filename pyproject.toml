@@ -5,6 +5,7 @@ description = "Benchmark for agents that patch old console binaries to enable ch
 requires-python = ">=3.13"
 dependencies = [
     "pydantic>=2.12.0",
+    "inspect-ai>=0.3.217",
 ]
 
 [dependency-groups]
