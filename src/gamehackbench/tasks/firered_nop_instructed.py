@@ -72,8 +72,7 @@ def gba_ram_sha_scorer() -> Scorer:
         observed = hashlib.sha1(ram).hexdigest()
 
         if observed == oracle_sha:
-            return Score(value=CORRECT, answer=observed,
-                         explanation=f"RAM SHA-1 matches oracle ({observed})")
+            return Score(value=CORRECT, answer=observed, explanation=f"RAM SHA-1 matches oracle ({observed})")
         return Score(
             value=INCORRECT,
             answer=observed,
