@@ -1,0 +1,28 @@
+# GameHackBench task: firered-nop-smoke
+#
+# Smallest end-to-end task. Used to validate the harness pipeline (xdelta3 patch
+# application + verifier container + RAM-SHA oracle), not to test agent capability.
+# The "agent" is currently a stub solver that copies solution/patch.xdelta into the
+# workspace verbatim.
+
+id = "firered-nop-smoke"
+description = "Apply the pre-baked Thumb NOP patch and produce a RAM dump matching the locked oracle SHA-1."
+
+[rom]
+path = "firered.gba"                                                    # baked into the verifier image at /roms/firered.gba
+sha1 = "dd5945db9b930750cb39d00c84da8571feebf417"                       # No-Intro Pokémon FireRed (USA, Europe) Rev 1
+
+[probe]
+frames = 600
+
+[oracle]
+# RAM SHA-1 produced by gba_probe after applying solution/patch.xdelta to the base
+# ROM and running 600 frames. Captured by gen_smoke_artifacts.py and frozen here.
+state_sha1 = "74d47f2fad70f5882b3b7bb0e4f777d0247cd7a0"
+
+[patch]
+# Reference info for the smoke patch (the actual patch lives in solution/patch.xdelta).
+offset = 0x204                                                          # entry-point target of the ARM branch at 0x000
+bytes_hex = "c046"                                                      # Thumb `mov r8, r8` little-endian
+format = "xdelta3"
+file = "solution/patch.xdelta"
