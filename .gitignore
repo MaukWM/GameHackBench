@@ -49,3 +49,5 @@ logs/
 
 # Per-task generator scratch dirs
 tasks/*/_work/
+
+local_scripts/
