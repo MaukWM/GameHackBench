@@ -1,0 +1,4 @@
+# Reference solution: single-byte write to the badges flag at the
+# anti-DMA-pinned SaveBlock1 offset. Matches GameShark v3 cheat
+# `00226510 000000FF` ("Have All Badges") in libretro-database.
+02226510:FF

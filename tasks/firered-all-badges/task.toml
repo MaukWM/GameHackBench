@@ -1,0 +1,44 @@
+# GameHackBench task: firered-all-badges
+#
+# RAM-poke task. Tests whether an agent can reverse-engineer a Pokémon
+# FireRed cheat: produce a list of GBA bus-address byte writes that flip
+# the badges flag to "all 8 obtained" without any reference state, cheat
+# DB hit, or address hint. The verifier seeds from a pinned savestate
+# (master + anti-DMA cheats active so the save block lives at a stable
+# EWRAM address) and applies the agent's pokes after state load. The
+# agent's container has only the ROM — no savestates, no .sav, no .cht.
+#
+# Pass condition: after applying the agent's pokes to the seed state and
+# running gba_play for the pinned frame budget, the badges byte at GBA bus
+# 0x02226510 reads 0xFF (all 8 gym badges marked obtained). Address
+# anchored by anti-DMA cheat — without it the save block floats per boot.
+
+id = "firered-all-badges"
+description = "Reverse-engineer a Pokémon FireRed cheat that sets all 8 gym badges via RAM byte writes."
+
+[rom]
+path = "firered/firered.gba"
+sha1 = "dd5945db9b930750cb39d00c84da8571feebf417"
+
+[probe]
+# 60 frames is enough to confirm the badge byte survives game-loop ticks
+# without burning verifier wallclock; smoke-tested at 60/300/1500.
+frames = 60
+
+[runner]
+# Pokes task: agent submits /workspace/out/pokes.txt; verifier loads the
+# seed state, applies pokes, runs gba_play, dumps RAM, evaluates predicate.
+artifact = "pokes"
+agent_pokes = "/work/agent_pokes.txt"
+state = "firered/firered_0_badges_pinned.ss0"
+# Verify-tool budget: how many times the agent may call gba_verify_pokes
+# during the solve loop. 8 keeps it iteratable but forces real RE rather
+# than blind brute force across EWRAM (256KB / 8 calls = no shortcut).
+verify_budget = 8
+
+[predicate]
+# rcheevos-subset: badges byte at EWRAM bus 0x02226510 must be 0xFF.
+# Address only stable because the seed state was saved with anti-DMA
+# active (cheat 24C35E88+037C3033+78DA95DF+44018CB4 pins SaveBlock1).
+expr = "0xH02226510=0xFF"
+explanation = "FireRed badges flag at SaveBlock1+0 (anti-DMA pinned) reads 0xFF (8 badges set)"

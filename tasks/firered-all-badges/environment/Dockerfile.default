@@ -1,0 +1,17 @@
+# Default service for firered-all-badges (agent workspace).
+#
+# Agent gets the ROM + RE toolkit (objdump for ARM/THUMB, python3-capstone,
+# xxd, gba_play for local dry-runs). NO savestate, NO .sav, NO .cht — the
+# whole point is the agent must reverse the ROM to find the badges byte
+# address. gba_play is included so the agent can prototype pokes against a
+# cold-boot ROM (different from the verifier's seed state, but useful for
+# spotting whether a poke address is in a writeable region etc.).
+
+FROM gamehackbench/gba-base:0.3
+
+RUN mkdir -p /roms /workspace/out
+COPY firered.gba /roms/firered.gba
+
+WORKDIR /workspace
+
+CMD ["sleep", "infinity"]

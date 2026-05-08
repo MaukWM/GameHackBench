@@ -38,11 +38,17 @@ htmlcov/
 # uv
 .cache/
 
-roms/
+roms/*
+!roms/firered/
+roms/firered/*
+!roms/firered/firered_0_badges_pinned.ss0
+!roms/firered/firered_8_badges_pinned.ss0
 
-# Per-task staged ROM copies (created by each task's gen_smoke_artifacts.py — needed
-# by the verifier Dockerfile build context, but still copyrighted binaries).
+# Per-task staged ROM + savestate copies (created by each task's gen_artifacts.py
+# — needed by the verifier Dockerfile build context, but the canonical copies
+# live under roms/firered/).
 tasks/*/environment/*.gba
+tasks/*/environment/*.ss0
 
 # Inspect AI eval logs
 logs/

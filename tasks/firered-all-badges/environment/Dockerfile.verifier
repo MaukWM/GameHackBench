@@ -1,0 +1,13 @@
+# Verifier service for firered-all-badges.
+#
+# Runs gba_play with the pinned seed state (master + anti-DMA cheats active
+# at save time, so SaveBlock1 lives at a stable EWRAM address) plus the
+# agent's submitted pokes. Scorer + verify-pokes tool both exec here.
+
+FROM gamehackbench/gba-base:0.3
+
+RUN mkdir -p /roms /work
+COPY firered.gba /roms/firered.gba
+COPY firered_0_badges_pinned.ss0 /roms/firered_0_badges_pinned.ss0
+
+CMD ["sleep", "infinity"]

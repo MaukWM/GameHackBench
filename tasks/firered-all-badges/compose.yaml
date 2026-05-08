@@ -1,0 +1,36 @@
+# Per-task compose for firered-all-badges.
+#
+# Two services. Default (agent): ROM + RE toolkit, NO savestate (forces
+# the agent to derive addresses via reverse engineering, not by reading
+# the seed). Verifier: ROM + seed savestate (pinned by anti-DMA cheat),
+# scorer + verify tool both exec into here. Shared volume carries the
+# agent's pokes.txt; isolated networks block IP-level reachability.
+
+services:
+  default:
+    build:
+      context: ./environment
+      dockerfile: Dockerfile.default
+    init: true
+    working_dir: /workspace
+    volumes:
+      - input-share:/workspace/out
+    networks:
+      - agentnet
+
+  verifier:
+    build:
+      context: ./environment
+      dockerfile: Dockerfile.verifier
+    init: true
+    volumes:
+      - input-share:/in:ro
+    networks:
+      - vnet
+
+volumes:
+  input-share:
+
+networks:
+  agentnet:
+  vnet:
