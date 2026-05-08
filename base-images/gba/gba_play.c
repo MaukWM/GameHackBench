@@ -16,6 +16,7 @@
 //            [--input <input.txt>]
 //            [--cheats <cheats.cht>]
 //            [--state <save.ss1>]
+//            [--apply-pokes <pokes.txt>]
 //            [--dump-ram <out.bin>]
 //
 // Input file format: text, one event per line.
@@ -25,6 +26,14 @@
 // Multiple events on the same frame = multiple lines.
 // Press is sticky until released — i.e. typical "hold A from frame 60 to 90"
 // is `60 + A` and `90 - A`.
+//
+// Pokes file format: text, one byte-write per line.
+//   <bus_addr_hex>:<byte_hex>
+// Example: `02226510:FF` writes 0xFF to GBA bus address 0x02226510.
+// Pokes are applied AFTER --state load and BEFORE the frame loop, simulating
+// what a runtime cheat hook would have written. Lines starting with '#' and
+// blank lines are ignored. Bus addresses must lie inside a writeable mGBA
+// memory block (EWRAM/IWRAM/PAL/VRAM/OAM/Flash).
 
 #include <mgba/core/cheats.h>
 #include <mgba/core/config.h>
@@ -199,6 +208,103 @@ static bool load_cheats(struct mCore* core, const char* path) {
     return true;
 }
 
+// Resolve a GBA bus address to a host pointer inside one of the writeable
+// memory blocks libmgba exposes. Returns NULL if the address isn't in any
+// writeable region. Folds GBA hardware mirrors: EWRAM at 0x02xxxxxx mirrors
+// every 256KB and IWRAM at 0x03xxxxxx every 32KB, so cheat-style addresses
+// like 0x02226510 (EWRAM mirror) resolve to their canonical offset.
+static uint8_t* resolve_bus_addr(struct mCore* core, uint32_t bus_addr) {
+    const struct mCoreMemoryBlock* blocks = NULL;
+    size_t nblocks = core->listMemoryBlocks(core, &blocks);
+    for (size_t i = 0; i < nblocks; ++i) {
+        if (!(blocks[i].flags & mCORE_MEMORY_WRITE)) continue;
+        size_t blksz = 0;
+        void* ptr = core->getMemoryBlock(core, blocks[i].id, &blksz);
+        if (!ptr || blksz == 0) continue;
+        uint32_t base = blocks[i].start;
+        // Direct range check.
+        if (bus_addr >= base && bus_addr < base + blksz) {
+            return (uint8_t*) ptr + (bus_addr - base);
+        }
+        // mGBA may report a wider [start, end) capturing the hardware mirror.
+        if (bus_addr >= blocks[i].start && bus_addr < blocks[i].end) {
+            uint32_t off = (bus_addr - base) % blksz;
+            return (uint8_t*) ptr + off;
+        }
+        // Fall back: check if bus_addr matches the high-nibble region of base
+        // (e.g. 0x02xxxxxx for EWRAM) and fold by block size. Matches the
+        // mirror behaviour the rcheevos predicate evaluator uses.
+        if ((bus_addr & 0xFF000000u) == (base & 0xFF000000u)) {
+            uint32_t off = (bus_addr - base) % blksz;
+            return (uint8_t*) ptr + off;
+        }
+    }
+    return NULL;
+}
+
+static bool apply_pokes(struct mCore* core, const char* path) {
+    FILE* f = fopen(path, "r");
+    if (!f) {
+        fprintf(stderr, "cannot open pokes %s\n", path);
+        return false;
+    }
+    char line[256];
+    int lineno = 0;
+    size_t applied = 0;
+    while (fgets(line, sizeof(line), f)) {
+        ++lineno;
+        char* p = line;
+        while (*p && isspace((unsigned char) *p)) ++p;
+        if (!*p || *p == '#') continue;
+
+        // Accept "ADDR:VV", "ADDR=VV", "ADDR VV". Strip trailing whitespace.
+        char addr_buf[16] = {0};
+        char val_buf[8] = {0};
+        size_t i = 0;
+        while (*p && *p != ':' && *p != '=' && !isspace((unsigned char) *p) && i + 1 < sizeof(addr_buf)) {
+            addr_buf[i++] = *p++;
+        }
+        addr_buf[i] = 0;
+        while (*p && (*p == ':' || *p == '=' || isspace((unsigned char) *p))) ++p;
+        i = 0;
+        while (*p && !isspace((unsigned char) *p) && i + 1 < sizeof(val_buf)) {
+            val_buf[i++] = *p++;
+        }
+        val_buf[i] = 0;
+        if (!addr_buf[0] || !val_buf[0]) {
+            fprintf(stderr, "pokes %s:%d: bad line: %s", path, lineno, line);
+            fclose(f);
+            return false;
+        }
+        char* end = NULL;
+        unsigned long addr = strtoul(addr_buf, &end, 16);
+        if (end == addr_buf || (end && *end != 0)) {
+            fprintf(stderr, "pokes %s:%d: bad addr: %s\n", path, lineno, addr_buf);
+            fclose(f);
+            return false;
+        }
+        unsigned long val = strtoul(val_buf, &end, 16);
+        if (end == val_buf || (end && *end != 0) || val > 0xFF) {
+            fprintf(stderr, "pokes %s:%d: bad byte value: %s\n", path, lineno, val_buf);
+            fclose(f);
+            return false;
+        }
+        uint8_t* dst = resolve_bus_addr(core, (uint32_t) addr);
+        if (!dst) {
+            fprintf(stderr,
+                    "pokes %s:%d: bus addr 0x%08lx not in any writeable block\n",
+                    path, lineno, addr);
+            fclose(f);
+            return false;
+        }
+        *dst = (uint8_t) val;
+        ++applied;
+    }
+    fclose(f);
+    fprintf(stderr, "pokes: %zu byte writes from %s\n", applied, path);
+    return true;
+}
+
 static bool load_state(struct mCore* core, const char* path) {
     struct VFile* vf = VFileOpen(path, O_RDONLY);
     if (!vf) {
@@ -237,7 +343,8 @@ static bool dump_ram(struct mCore* core, FILE* out) {
 static void usage(const char* prog) {
     fprintf(stderr,
         "usage: %s --rom <rom.gba> [--frames N] [--input file] "
-        "[--cheats file] [--state file] [--dump-ram out]\n", prog);
+        "[--cheats file] [--state file] [--apply-pokes file] "
+        "[--dump-ram out]\n", prog);
 }
 
 int main(int argc, char** argv) {
@@ -245,21 +352,23 @@ int main(int argc, char** argv) {
     const char* input_path = NULL;
     const char* cheats_path = NULL;
     const char* state_path = NULL;
+    const char* pokes_path = NULL;
     const char* dump_path = NULL;
     long frames = 1800;
 
     static struct option long_opts[] = {
-        {"rom",      required_argument, 0, 'r'},
-        {"frames",   required_argument, 0, 'f'},
-        {"input",    required_argument, 0, 'i'},
-        {"cheats",   required_argument, 0, 'c'},
-        {"state",    required_argument, 0, 's'},
-        {"dump-ram", required_argument, 0, 'd'},
-        {"help",     no_argument,       0, 'h'},
+        {"rom",         required_argument, 0, 'r'},
+        {"frames",      required_argument, 0, 'f'},
+        {"input",       required_argument, 0, 'i'},
+        {"cheats",      required_argument, 0, 'c'},
+        {"state",       required_argument, 0, 's'},
+        {"apply-pokes", required_argument, 0, 'p'},
+        {"dump-ram",    required_argument, 0, 'd'},
+        {"help",        no_argument,       0, 'h'},
         {0, 0, 0, 0}
     };
     int opt;
-    while ((opt = getopt_long(argc, argv, "r:f:i:c:s:d:h",
+    while ((opt = getopt_long(argc, argv, "r:f:i:c:s:p:d:h",
                               long_opts, NULL)) != -1) {
         switch (opt) {
             case 'r': rom_path = optarg; break;
@@ -267,6 +376,7 @@ int main(int argc, char** argv) {
             case 'i': input_path = optarg; break;
             case 'c': cheats_path = optarg; break;
             case 's': state_path = optarg; break;
+            case 'p': pokes_path = optarg; break;
             case 'd': dump_path = optarg; break;
             case 'h': usage(argv[0]); return 0;
             default: usage(argv[0]); return 2;
@@ -303,6 +413,13 @@ int main(int argc, char** argv) {
         return 1;
     }
     if (cheats_path && !load_cheats(core, cheats_path)) {
+        core->deinit(core);
+        return 1;
+    }
+    // Pokes apply AFTER state load — the state restore would otherwise stomp
+    // the agent's writes — and BEFORE the frame loop, so the cheat-equivalent
+    // bytes are visible to the first frame's logic.
+    if (pokes_path && !apply_pokes(core, pokes_path)) {
         core->deinit(core);
         return 1;
     }
