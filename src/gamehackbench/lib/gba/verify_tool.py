@@ -39,7 +39,7 @@ def gba_verify_pokes(task_dir: Path) -> Tool:
             f"got kind={cfg.kind} artifact={cfg.runner_artifact}"
         )
 
-    rom_in_verifier = f"/roms/{cfg.rom_path}"
+    rom_in_verifier = f"/roms/{Path(cfg.rom_path).name}"
     frames = cfg.frames
     predicate_expr = cfg.predicate_expr or ""
     state_path = f"/roms/{Path(cfg.runner_state).name}" if cfg.runner_state else None

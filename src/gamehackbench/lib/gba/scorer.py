@@ -32,7 +32,7 @@ def gba_ram_sha_scorer(task_dir: Path) -> Scorer:
     """
 
     cfg = load_task_config(task_dir)
-    rom_in_verifier = f"/roms/{cfg.rom_path}"
+    rom_in_verifier = f"/roms/{Path(cfg.rom_path).name}"
     frames = cfg.frames
     oracle_sha = cfg.oracle_sha1
 
@@ -93,7 +93,7 @@ def gba_predicate_scorer(task_dir: Path) -> Scorer:
     if cfg.kind != "predicate":
         raise ValueError(f"gba_predicate_scorer requires a predicate task; got kind={cfg.kind}")
 
-    rom_in_verifier = f"/roms/{cfg.rom_path}"
+    rom_in_verifier = f"/roms/{Path(cfg.rom_path).name}"
     frames = cfg.frames
     predicate_expr = cfg.predicate_expr
     explanation = cfg.predicate_explanation
