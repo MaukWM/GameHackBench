@@ -9,7 +9,7 @@ id = "firered-nop-smoke"
 description = "Apply the pre-baked Thumb NOP patch and produce a RAM dump matching the locked oracle SHA-1."
 
 [rom]
-path = "firered.gba"                                                    # baked into the verifier image at /roms/firered.gba
+path = "firered/firered.gba"                                            # baked into the verifier image at /roms/firered.gba
 sha1 = "dd5945db9b930750cb39d00c84da8571feebf417"                       # No-Intro Pokémon FireRed (USA, Europe) Rev 1
 
 [probe]

@@ -9,7 +9,7 @@ id = "firered-nop-instructed"
 description = "Real agent follows explicit byte-level patch instructions and emits an xdelta3 that reproduces the locked oracle RAM SHA-1."
 
 [rom]
-path = "firered.gba"                                                    # baked into BOTH services at /workspace/rom and /roms
+path = "firered/firered.gba"                                            # baked into BOTH services at /workspace/rom and /roms
 sha1 = "dd5945db9b930750cb39d00c84da8571feebf417"                       # No-Intro Pokémon FireRed (USA, Europe) Rev 1
 
 [probe]
